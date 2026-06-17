@@ -6,7 +6,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
-        sandbox: resolve(__dirname, 'sandbox/index.html'),
         umbrashift: resolve(__dirname, 'umbrashift/index.html')
       }
     }
