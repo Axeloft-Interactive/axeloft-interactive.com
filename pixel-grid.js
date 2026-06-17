@@ -189,13 +189,14 @@ const PixelGrid = (() => {
 
   // ── Electron ───────────────────────────────────────────────────────────
   class Electron {
-    constructor(x = 0, y = 0, { lifeTime = 3000, speed = config.STEP_LENGTH, color = config.ELECTRON_COLOR, isLogo = false, logoCenter = null } = {}) {
+    constructor(x = 0, y = 0, { lifeTime = 3000, speed = config.STEP_LENGTH, color = config.ELECTRON_COLOR, isLogo = false, isRandom = false, logoCenter = null } = {}) {
       this.lifeTime = lifeTime;
       this.expireAt = Date.now() + lifeTime;
       this.speed = speed;
       this.color = color;
       this.radius = 1.2;
       this.isLogo = isLogo;
+      this.isRandom = isRandom;
       this.logoCenter = logoCenter;
       this.current = [x, y];
       this.visited = {};
@@ -356,6 +357,12 @@ const PixelGrid = (() => {
         } else {
           x = localX;
           y = localY;
+          if (e.isRandom && _currentLogoRgb) {
+            const r = Math.round(_currentLogoRgb.r);
+            const g = Math.round(_currentLogoRgb.g);
+            const b = Math.round(_currentLogoRgb.b);
+            color = `rgb(${r},${g},${b})`;
+          }
         }
 
         const alpha = Math.max(0, e.expireAt - now) / e.lifeTime;
@@ -387,7 +394,7 @@ const PixelGrid = (() => {
     const cell = new Cell(
       Math.floor(Math.random() * (height / config.CELL_DISTANCE + 1)),
       Math.floor(Math.random() * (width / config.CELL_DISTANCE + 1)),
-      opts
+      { ...opts, electronOptions: { ...(opts.electronOptions || {}), isRandom: true } }
     );
     cell.paintNextTo(mainLayer);
   }
@@ -689,7 +696,7 @@ const PixelGrid = (() => {
         // Only 5% of nested logo cells spawn active electron trails.
         electronCount: c.isLogo 
           ? (Math.random() > 0.95 ? 1 : 0)
-          : (c.alpha > 0.5 ? 1 + Math.floor(Math.random() * 3) : Math.random() > 0.7 ? 1 : 0),
+          : (Math.random() > 0.9 ? 1 : 0),
         electronOptions: { speed: 2, color: eColor, lifeTime: 300 + randomInt(0, 200) },
         cellSize: c.cellSize,
         cellDistance: cellDist,
@@ -875,3 +882,5 @@ const PixelGrid = (() => {
 
   return { init, destroy };
 })();
+
+window.PixelGrid = PixelGrid;
