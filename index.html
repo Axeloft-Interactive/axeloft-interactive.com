@@ -204,7 +204,7 @@
         
         // Sandbox easter egg
         let sandboxUnlocked = false;
-        function unlockSandbox() {
+        function unlockSandbox(isLoad = false) {
           if (sandboxUnlocked) return;
           sandboxUnlocked = true;
           localStorage.setItem('sandbox_unlocked', 'true');
@@ -219,6 +219,11 @@
           btn.style.zIndex = "999";
           btn.onclick = () => { openSandbox(); btn.style.display = "none"; };
           document.body.appendChild(btn);
+
+          if (!isLoad) {
+            openSandbox();
+            btn.style.display = "none";
+          }
 
           const lockBtn = document.getElementById("lock-sandbox-btn");
           if (lockBtn) {
@@ -235,7 +240,7 @@
         }
 
         if (localStorage.getItem('sandbox_unlocked') === 'true') {
-          unlockSandbox();
+          unlockSandbox(true);
         }
 
         if (hero) {
@@ -277,7 +282,7 @@
             // Give a slight delay so CSS transitions can play
             setTimeout(() => {
               const uiPanel = document.getElementById("sandbox-ui");
-              if(uiPanel) uiPanel.style.opacity = '1';
+              if(uiPanel) uiPanel.classList.remove("hidden");
             }, 50);
 
             const script = document.createElement("script");

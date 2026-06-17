@@ -167,7 +167,8 @@
   });
 
   document.getElementById("close-sandbox-btn")?.addEventListener("click", () => {
-    uiPanel.style.opacity = '0';
+    uiPanel.style.transform = ''; // clear inline transform if dragged
+    uiPanel.classList.add("hidden");
     setTimeout(() => {
       uiPanel.remove();
       const openBtn = document.getElementById("open-sandbox-btn") || Array.from(document.querySelectorAll("button")).find(b => b.innerText === "Open Sandbox");

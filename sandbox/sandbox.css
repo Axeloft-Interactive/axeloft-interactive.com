@@ -2,8 +2,9 @@
   position: fixed;
   top: 1rem;
   right: 1rem;
-  transform: none;
-  width: 140px;
+  width: 180px;
+  box-sizing: border-box;
+  transform: translateX(0);
   background: rgba(15, 19, 24, 0.6);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -13,11 +14,12 @@
   z-index: 1000;
   color: #e2e8f0;
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  transition: opacity 0.3s ease, pointer-events 0.3s ease;
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), pointer-events 0.3s ease;
 }
 
 .sandbox-controls.hidden {
   opacity: 0;
+  transform: translateX(120%);
   pointer-events: none;
 }
 
