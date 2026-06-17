@@ -167,6 +167,7 @@
         <span class="footer-copy"
           >&copy; <span id="year"></span> — All rights reserved.</span
         >
+        <button id="lock-sandbox-btn" class="btn-secondary small" style="display:none; margin-left: 1rem;">Lock Sandbox</button>
       </div>
     </footer>
 
@@ -175,10 +176,10 @@
     <script>
       // Load custom config if injected by port wrappers
       document.addEventListener("DOMContentLoaded", () => {
-        // Boot the pixel grid in the hero section with Port 8086 Design Configuration
-        const hero = document.getElementById("hero");
-        if (hero) {
-          PixelGrid.init(hero, "Axeloft Interactive", {
+        // Boot the pixel grid in the hero section
+        const heroMain = document.getElementById("hero");
+        if (heroMain) {
+          SandboxGrid.init(heroMain, "Axeloft Interactive", {
             "STEP_LENGTH": 2,
             "CELL_SIZE": 5,
             "BORDER_WIDTH": 1,
@@ -196,6 +197,92 @@
             "logoGridSize": 2,
             "logoGridTransition": true,
             "logoScale": 0.38
+          });
+        }
+        
+        const hero = heroMain; // for legacy references below
+        
+        // Sandbox easter egg
+        let sandboxUnlocked = false;
+        function unlockSandbox() {
+          if (sandboxUnlocked) return;
+          sandboxUnlocked = true;
+          localStorage.setItem('sandbox_unlocked', 'true');
+          
+          const btn = document.createElement("button");
+          btn.id = "open-sandbox-btn";
+          btn.className = "btn-secondary small";
+          btn.innerText = "Open Sandbox";
+          btn.style.position = "fixed";
+          btn.style.top = "1rem";
+          btn.style.right = "1rem";
+          btn.style.zIndex = "999";
+          btn.onclick = () => { openSandbox(); btn.style.display = "none"; };
+          document.body.appendChild(btn);
+
+          const lockBtn = document.getElementById("lock-sandbox-btn");
+          if (lockBtn) {
+            lockBtn.style.display = "inline-block";
+            lockBtn.onclick = () => {
+              sandboxUnlocked = false;
+              localStorage.removeItem('sandbox_unlocked');
+              lockBtn.style.display = "none";
+              btn.remove();
+              const uiPanel = document.getElementById("sandbox-ui");
+              if (uiPanel) uiPanel.remove();
+            };
+          }
+        }
+
+        if (localStorage.getItem('sandbox_unlocked') === 'true') {
+          unlockSandbox();
+        }
+
+        if (hero) {
+          let switchCount = 0;
+          hero.addEventListener("logo-color-switch", () => {
+            if (sandboxUnlocked) return;
+            switchCount++;
+            if (switchCount >= 30) {
+              unlockSandbox();
+            }
+          });
+        }
+
+        // SANDBOX key sequence
+        let keys = [];
+        const konami = ['s','a','n','d','b','o','x'];
+        window.addEventListener('keydown', (e) => {
+          keys.push(e.key.toLowerCase());
+          keys.splice(-konami.length - 1, keys.length - konami.length);
+          if (keys.join('') === konami.join('')) {
+            unlockSandbox();
+          }
+        });
+
+        function openSandbox() {
+          if (document.getElementById("sandbox-ui")) return; // already open
+          
+          // Inject UI
+          const link = document.createElement("link");
+          link.rel = "stylesheet";
+          link.href = "/sandbox/sandbox.css";
+          document.head.appendChild(link);
+          
+          fetch('/sandbox/ui.html').then(r => r.text()).then(html => {
+            const div = document.createElement("div");
+            div.innerHTML = html;
+            document.body.appendChild(div);
+            
+            // Give a slight delay so CSS transitions can play
+            setTimeout(() => {
+              const uiPanel = document.getElementById("sandbox-ui");
+              if(uiPanel) uiPanel.style.opacity = '1';
+            }, 50);
+
+            const script = document.createElement("script");
+            script.src = "/sandbox/sandbox-app.js";
+            document.body.appendChild(script);
           });
         }
 

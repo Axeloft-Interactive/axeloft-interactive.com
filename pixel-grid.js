@@ -4,7 +4,7 @@
  * Supports optional logo rendering with anti-aliasing and nested grid modes.
  */
 
-const PixelGrid = (() => {
+const SandboxGrid = (() => {
   // ── Mutable Config ─────────────────────────────────────────────────────
   let config = {
     STEP_LENGTH: 2,
@@ -265,6 +265,8 @@ const PixelGrid = (() => {
       this.cellDistance = cellDistance;
       this.startY = row * cellDistance;
       this.startX = col * cellDistance;
+      this.isLogo = false;
+      this.alpha = 1;
       this.expireAt = Number.MAX_SAFE_INTEGER;
       this.nextUpdate = undefined;
     }
@@ -380,62 +382,212 @@ const PixelGrid = (() => {
     bgLayer.paint((ctx, { width, height }) => {
       ctx.fillStyle = config.BG_COLOR;
       ctx.fillRect(0, 0, width, height);
-      ctx.fillStyle = config.BORDER_COLOR;
-      for (let h = config.CELL_SIZE; h < height; h += config.CELL_DISTANCE)
-        ctx.fillRect(0, h, width, config.BORDER_WIDTH);
-      for (let w = config.CELL_SIZE; w < width; w += config.CELL_DISTANCE)
-        ctx.fillRect(w, 0, config.BORDER_WIDTH, height);
 
-      if (config.logoSrc && config.logoGridSize && config.logoGridSize > 1 && _logoOriginalW) {
+      let useNested = config.logoSrc && config.logoGridSize && config.logoGridSize > 1 && _logoOriginalW;
+      
+      const logoCenterX = width / 2;
+      const logoCenterY = height * config.logoCenterYRatio;
+
+      let logoW = 0, logoH = 0;
+      if (useNested) {
         const logoMaxH = height * config.logoScale;
         let aspect = _logoOriginalW / _logoOriginalH;
-        let logoW = logoMaxH * aspect;
-        if (logoW > width * 0.35) {
-          logoW = width * 0.35;
-        }
-        let logoH = logoW / aspect;
-        
-        const logoCenterX = width / 2;
-        const logoCenterY = height * config.logoCenterYRatio;
-        
-        const pad = config.logoGridTransition ? config.CELL_DISTANCE * 3 : 0;
-        // Use max scale 1.35 to ensure the grid covers the expanded logo
-        const maxScale = 1.35;
-        const boxW = logoW * maxScale + pad * 2;
-        const boxH = logoH * maxScale + pad * 2;
-        
-        const x1 = logoCenterX - boxW / 2;
-        const y1 = logoCenterY - boxH / 2;
-        const x2 = logoCenterX + boxW / 2;
-        const y2 = logoCenterY + boxH / 2;
-        
-        const logoCellSize = Math.max(1, Math.round(config.CELL_SIZE / config.logoGridSize));
-        const logoBorderWidth = Math.max(1, Math.round(config.BORDER_WIDTH / config.logoGridSize));
-        const logoCellDist = logoCellSize + logoBorderWidth;
-
-        for (let y = Math.floor(y1); y <= y2; y += logoCellDist) {
-          if (y >= 0 && y <= height) {
-             ctx.fillRect(Math.max(0, x1), y, Math.min(width, x2) - Math.max(0, x1), logoBorderWidth);
-          }
-        }
-        for (let x = Math.floor(x1); x <= x2; x += logoCellDist) {
-          if (x >= 0 && x <= width) {
-             ctx.fillRect(x, Math.max(0, y1), logoBorderWidth, Math.min(height, y2) - Math.max(0, y1));
-          }
-        }
+        logoW = logoMaxH * aspect;
+        if (logoW > width * 0.35) logoW = width * 0.35;
+        logoH = logoW / aspect;
       }
+
+      // Draw large grid
+      const cvsL = document.createElement("canvas");
+      cvsL.width = width; cvsL.height = height;
+      const ctxL = cvsL.getContext("2d");
+      ctxL.fillStyle = config.BORDER_COLOR;
+      for (let h = config.CELL_SIZE; h < height; h += config.CELL_DISTANCE)
+        ctxL.fillRect(0, h, width, config.BORDER_WIDTH);
+      for (let w = config.CELL_SIZE; w < width; w += config.CELL_DISTANCE)
+        ctxL.fillRect(w, 0, config.BORDER_WIDTH, height);
+
+      if (!useNested) {
+        ctx.drawImage(cvsL, 0, 0);
+        return;
+      }
+
+      const maxScale = 1.35;
+      const pad = config.logoGridTransition ? config.CELL_DISTANCE * 6 : config.CELL_DISTANCE * 2;
+      const boxW = logoW * maxScale + pad * 2;
+      const boxH = logoH * maxScale + pad * 2;
+      const radius = Math.max(boxW, boxH) / 2;
+
+      // Erase large grid in the center
+      const grad = ctxL.createRadialGradient(logoCenterX, logoCenterY, radius * 0.4, logoCenterX, logoCenterY, radius);
+      grad.addColorStop(0, "rgba(0,0,0,1)");
+      grad.addColorStop(1, "rgba(0,0,0,0)");
+      ctxL.globalCompositeOperation = "destination-out";
+      ctxL.fillStyle = grad;
+      ctxL.fillRect(logoCenterX - radius, logoCenterY - radius, radius * 2, radius * 2);
+      ctx.drawImage(cvsL, 0, 0);
+
+      // Draw small grid
+      const cvsS = document.createElement("canvas");
+      cvsS.width = width; cvsS.height = height;
+      const ctxS = cvsS.getContext("2d");
+      ctxS.fillStyle = config.BORDER_COLOR;
+      
+      const logoCellSize = Math.max(1, Math.round(config.CELL_SIZE / config.logoGridSize));
+      const logoBorderWidth = Math.max(1, Math.round(config.BORDER_WIDTH / config.logoGridSize));
+      const logoCellDist = logoCellSize + logoBorderWidth;
+
+      const x1 = logoCenterX - radius;
+      const y1 = logoCenterY - radius;
+      const x2 = logoCenterX + radius;
+      const y2 = logoCenterY + radius;
+
+      for (let y = Math.floor(y1); y <= y2; y += logoCellDist) {
+        if (y >= 0 && y <= height) ctxS.fillRect(Math.max(0, x1), y, Math.min(width, x2) - Math.max(0, x1), logoBorderWidth);
+      }
+      for (let x = Math.floor(x1); x <= x2; x += logoCellDist) {
+        if (x >= 0 && x <= width) ctxS.fillRect(x, Math.max(0, y1), logoBorderWidth, Math.min(height, y2) - Math.max(0, y1));
+      }
+
+      // Mask small grid to only show in center
+      ctxS.globalCompositeOperation = "destination-in";
+      ctxS.fillStyle = grad;
+      ctxS.fillRect(logoCenterX - radius, logoCenterY - radius, radius * 2, radius * 2);
+
+      ctx.drawImage(cvsS, 0, 0);
     });
   }
 
   function createRandomCell(mainLayer, opts = {}) {
+    if (config.disableRandomSpawn) return;
     if (ACTIVE_ELECTRONS.length >= config.MAX_ELECTRONS) return;
     const { width, height } = mainLayer;
     const cell = new Cell(
       Math.floor(Math.random() * (height / config.CELL_DISTANCE + 1)),
       Math.floor(Math.random() * (width / config.CELL_DISTANCE + 1)),
-      { ...opts, electronOptions: { ...(opts.electronOptions || {}), isRandom: true } }
+      { background: "transparent", ...opts, electronOptions: { ...(opts.electronOptions || {}), isRandom: true } }
     );
     cell.paintNextTo(mainLayer);
+  }
+
+  // Helper for sandbox: get cell coordinates from pixel coordinates
+  function getCellCoords(px, py) {
+    return {
+      row: Math.floor(py / config.CELL_DISTANCE),
+      col: Math.floor(px / config.CELL_DISTANCE)
+    };
+  }
+
+  function eraseAt(px, py, radiusCells) {
+    const coords = getCellCoords(px, py);
+    const newPinned = [];
+    for (let c of PINNED_CELLS) {
+      const dr = c.startY / config.CELL_DISTANCE - coords.row;
+      const dc = c.startX / config.CELL_DISTANCE - coords.col;
+      if (dr*dr + dc*dc > radiusCells*radiusCells) {
+        newPinned.push(c);
+      }
+    }
+    PINNED_CELLS.length = 0;
+    PINNED_CELLS.push(...newPinned);
+  }
+
+  function paintAt(px, py, radiusCells, colorHex, alpha, electronCount) {
+    const coords = getCellCoords(px, py);
+    
+    for (let r = -radiusCells; r <= radiusCells; r++) {
+      for (let c = -radiusCells; c <= radiusCells; c++) {
+        if (r*r + c*c <= radiusCells*radiusCells) {
+          const row = coords.row + r;
+          const col = coords.col + c;
+          
+          // Remove existing cell at this position if any
+          const existingIdx = PINNED_CELLS.findIndex(cell => 
+            Math.abs(cell.startX - col * config.CELL_DISTANCE) < 0.1 && 
+            Math.abs(cell.startY - row * config.CELL_DISTANCE) < 0.1
+          );
+          if (existingIdx !== -1) PINNED_CELLS.splice(existingIdx, 1);
+          
+          const isRainbow = colorHex === "rainbow";
+          const resolvedColor = isRainbow ? (config.LOGO_COLOR || "#00f0ff") : colorHex;
+          const rgb = hexToRgb(resolvedColor);
+          const bg = alpha < 1 ? `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})` : resolvedColor;
+          
+          const cell = new Cell(row, col, {
+            background: bg,
+            electronCount: electronCount,
+            electronOptions: { speed: 2, color: bg, lifeTime: 300 + randomInt(0, 200) },
+            cellSize: config.CELL_SIZE,
+            cellDistance: config.CELL_DISTANCE
+          });
+          cell.isRainbow = isRainbow;
+          cell.alpha = alpha;
+          cell.pin();
+        }
+      }
+    }
+  }
+
+  function exportState() {
+    return JSON.stringify({
+      config: {
+        CELL_SIZE: config.CELL_SIZE,
+        BORDER_WIDTH: config.BORDER_WIDTH
+      },
+      cells: PINNED_CELLS.map(c => ({
+        row: Math.round(c.startY / config.CELL_DISTANCE),
+        col: Math.round(c.startX / config.CELL_DISTANCE),
+        background: c.background,
+        alpha: c.alpha,
+        electronCount: c.electronCount,
+        isLogo: c.isLogo,
+        baseOffsetX: c.baseOffsetX,
+        baseOffsetY: c.baseOffsetY
+      }))
+    });
+  }
+
+  function importState(jsonStr) {
+    try {
+      const state = JSON.parse(jsonStr);
+      if (state.config) {
+        config.CELL_SIZE = state.config.CELL_SIZE;
+        config.BORDER_WIDTH = state.config.BORDER_WIDTH;
+        updateDerivedConfig();
+      }
+      PINNED_CELLS.length = 0;
+      ACTIVE_ELECTRONS.length = 0;
+      if (_mainLayer) _mainLayer.clear();
+      
+      state.cells.forEach(c => {
+        const cell = new Cell(c.row, c.col, {
+          background: c.background,
+          electronCount: c.electronCount,
+          electronOptions: { speed: 2, color: c.background, lifeTime: 300 + randomInt(0, 200) },
+          cellSize: config.CELL_SIZE,
+          cellDistance: config.CELL_DISTANCE
+        });
+        cell.alpha = c.alpha || 1;
+        if (c.isLogo) {
+          cell.isLogo = true;
+          cell.baseOffsetX = c.baseOffsetX;
+          cell.baseOffsetY = c.baseOffsetY;
+        }
+        cell.pin();
+      });
+    } catch(e) {
+      console.error("Failed to import state", e);
+    }
+  }
+  
+  function clearAll() {
+    PINNED_CELLS.length = 0;
+    ACTIVE_ELECTRONS.length = 0;
+    if (_mainLayer) _mainLayer.clear();
+  }
+
+  function getContainer() {
+    return _mainLayer ? _mainLayer.container : null;
   }
 
   function compactAndPaint(list, mainLayer) {
@@ -614,8 +766,8 @@ const PixelGrid = (() => {
     return cells;
   }
 
-  function printShape(shapeLayer, text, logoImg) {
-    PINNED_CELLS.length = 0;
+  function printShape(shapeLayer, text, logoImg, clear = true) {
+    if (clear) PINNED_CELLS.length = 0;
     const cells = getShapeMatrix(shapeLayer, text, logoImg);
     const useAA = config.logoAntiAlias;
 
@@ -749,6 +901,9 @@ const PixelGrid = (() => {
       } else {
         config.LOGO_COLOR = "#00f0ff"; // Switch from Amber to Cyan
       }
+      
+      const container = document.getElementById("hero");
+      if (container) container.dispatchEvent(new CustomEvent('logo-color-switch'));
     }
     _wasHovered = isCurrentlyHovered;
 
@@ -837,6 +992,16 @@ const PixelGrid = (() => {
           cell.electronCount = 0;
           cell.wasActive = false;
         }
+      } else if (cell.isRainbow) {
+        if (_currentLogoRgb) {
+          const rr = Math.round(_currentLogoRgb.r);
+          const gg = Math.round(_currentLogoRgb.g);
+          const bb = Math.round(_currentLogoRgb.b);
+          cell.background = `rgb(${rr},${gg},${bb})`;
+        } else {
+          cell.background = config.LOGO_COLOR || "#00f0ff";
+        }
+        cell.electronOptions.color = cell.background;
       }
     });
   }
@@ -852,6 +1017,8 @@ const PixelGrid = (() => {
   let _logoOriginalH = 0;
   let _logoImageData = null;
   let _nextRandomAt = 0;
+  let _observer = null;
+  let _isVisible = true;
 
   async function init(container, text = "Axeloft", options = {}) {
     if (_isAlive) return;
@@ -912,6 +1079,7 @@ const PixelGrid = (() => {
     printShape(_shapeLayer, text, _logoImg);
 
     function renderLoop() {
+      if (!_isAlive || !_isVisible) return;
       // Apply mouse distance logic
       updateLogoInteractions();
 
@@ -928,10 +1096,18 @@ const PixelGrid = (() => {
 
       _renderFrameId = requestAnimationFrame(renderLoop);
     }
-    renderLoop();
+    _isAlive = true;
+
+    _observer = new IntersectionObserver((entries) => {
+      _isVisible = entries[0].isIntersecting;
+      if (_isVisible && _isAlive) {
+        if (_renderFrameId !== undefined) cancelAnimationFrame(_renderFrameId);
+        _renderFrameId = requestAnimationFrame(renderLoop);
+      }
+    });
+    _observer.observe(container);
 
     _unbindPointer = handlePointer(container, _mainLayer);
-    _isAlive = true;
 
     function prepaint() {
       drawGrid(_bgLayer);
@@ -946,6 +1122,7 @@ const PixelGrid = (() => {
   function destroy() {
     if (!_isAlive) return;
     if (_renderFrameId !== undefined) cancelAnimationFrame(_renderFrameId);
+    if (_observer) _observer.disconnect();
     _unbindPointer?.();
     _bgLayer.remove();
     _mainLayer.remove();
@@ -957,7 +1134,8 @@ const PixelGrid = (() => {
     _logoImg = null;
   }
 
-  return { init, destroy };
+  return { init, destroy, paintAt, eraseAt, exportState, importState, clearAll, printShape, getContainer, getConfig: () => config, addShape: (t, img) => { if(_shapeLayer) printShape(_shapeLayer, t, img, false); } };
 })();
 
-window.PixelGrid = PixelGrid;
+window.SandboxGrid = SandboxGrid;
+window.PixelGrid = SandboxGrid;

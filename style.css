@@ -192,6 +192,53 @@ body {
   }
 }
 
+.sandbox-slide-btn {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%) translateX(100%);
+  background: rgba(15, 19, 24, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 180, 216, 0.4);
+  border-right: none;
+  border-radius: 0.75rem 0 0 0.75rem;
+  color: #90e0ef;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.2s ease, box-shadow 0.2s ease;
+  pointer-events: auto;
+  z-index: 10;
+}
+
+.sandbox-slide-btn.visible {
+  transform: translateY(-50%) translateX(0);
+}
+
+.sandbox-slide-btn:hover {
+  background: rgba(0, 180, 216, 0.2);
+  box-shadow: -5px 0 20px rgba(0, 180, 216, 0.2);
+  color: #fff;
+}
+
+.sandbox-slide-btn .btn-arrow {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  fill: none;
+  transition: transform 0.2s ease;
+}
+
+.sandbox-slide-btn:hover .btn-arrow {
+  transform: translateX(4px);
+}
+
 /* ─── Content Sections ─────────────────────────────────────────────── */
 .content {
   position: relative;

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Umbrashift Pixel Sandbox</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../style.css" />
+  <link rel="stylesheet" href="sandbox.css" />
+</head>
+<body>
+  <div id="sandbox-hero" class="hero"></div>
+
+  <div id="sandbox-ui" class="sandbox-controls">
+    <div class="controls-header">
+      <h2>Sandbox</h2>
+      <div style="display:flex; gap:0.5rem;">
+        <button id="preview-btn" class="btn-secondary small" title="Preview fullscreen">👁</button>
+        <button id="reset-btn" class="btn-secondary small">Reset</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <h3>Tools</h3>
+      <div class="tools-row">
+        <button class="color-btn active" data-color="#00b4d8" style="background:#00b4d8"></button>
+        <button class="color-btn" data-color="#ff007f" style="background:#ff007f"></button>
+        <button class="color-btn" data-color="#ffb700" style="background:#ffb700"></button>
+        <button class="color-btn" data-color="#90e0ef" style="background:#90e0ef"></button>
+        <button class="color-btn" data-color="#ffffff" style="background:#ffffff"></button>
+      </div>
+      <label>Brush Size: <input type="number" id="brush-size" value="1" min="1" max="10"></label>
+      <label>Electrons: <input type="number" id="brush-electrons" value="2" min="0" max="10"></label>
+    </div>
+
+    <div class="control-group">
+      <h3>Add Elements</h3>
+      <button id="add-text-btn" class="btn-secondary small block">Add Text</button>
+      <button id="add-img-btn" class="btn-secondary small block">Add Image</button>
+      <input type="file" id="img-upload" style="display:none" accept=".png, .svg, .jpg, .jpeg">
+    </div>
+
+    <div class="control-group">
+      <h3>History</h3>
+      <div class="examples-row">
+        <button id="undo-btn" class="btn-secondary small">Undo (Ctrl+Z)</button>
+        <button id="redo-btn" class="btn-secondary small">Redo</button>
+      </div>
+      <div class="examples-row">
+        <span>Examples:</span>
+        <button class="btn-secondary small" onclick="Sandbox.loadExample('logo')">Logo</button>
+        <button class="btn-secondary small" onclick="Sandbox.loadExample('empty')">Empty</button>
+      </div>
+    </div>
+    
+    <a href="/" class="back-link">← Back to Main</a>
+  </div>
+
+  <button id="exit-preview-btn" class="btn-secondary small hidden">Exit Preview</button>
+
+  <script src="sandbox-grid.js"></script>
+  <script src="sandbox-app.js"></script>
+</body>
+</html>
