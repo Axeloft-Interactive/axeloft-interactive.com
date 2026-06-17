@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="2048px" height="2048px" viewBox="-0.5 -0.5 2048 2048" style="shape-rendering:geometricPrecision; text-rendering:geometricPrecision; image-rendering:optimizeQuality; fill-rule:evenodd; clip-rule:evenodd">
+<!-- Outer pentagon body -->
+<g><path style="opacity:1" fill="#ffffff" d="M 1022.5,-0.5 C 1023.5,-0.5 1024.5,-0.5 1025.5,-0.5C 1130.12,75.4902 1234.45,151.99 1338.5,229C 1574.99,400.665 1811.32,572.498 2047.5,744.5C 2047.5,809.167 2047.5,873.833 2047.5,938.5C 1929.92,1303.92 1812.92,1669.59 1696.5,2035.5C 1403.67,2039.48 1111,2043.48 818.5,2047.5C 666.5,2047.5 514.5,2047.5 362.5,2047.5C 242.281,1675.84 121.281,1304.51 -0.5,933.5C -0.5,870.833 -0.5,808.167 -0.5,745.5C 340.505,496.826 681.505,248.16 1022.5,-0.5 Z"/></g>
+<!-- Inner pentagon cutout — makes the inner area transparent via destination-out compositing -->
+<!-- We can't use compositing in SVG easily, so instead we use a mask -->
+</svg>

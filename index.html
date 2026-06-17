@@ -1,11 +1,259 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <Title>Axeloft INTERACTIVE</Title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Axeloft Interactive — Umbrashift Game Studio</title>
+    <meta
+      name="description"
+      content="Axeloft Interactive is a two-person indie game studio crafting Umbrashift, a pixel art game."
+    />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   </head>
+
   <body>
-    <h>Hallo!</h>
-    <br>
-    <p>Deze website bestaat nu!</p>
+    <!-- ═══════════════════════════════════════════════════════════════════
+         TOP BAR / NAVIGATION
+         ═══════════════════════════════════════════════════════════════════ -->
+    <header class="top-bar">
+      <div class="nav-container">
+        <a href="#hero" class="nav-logo">
+          <img src="/logo.svg" alt="Axeloft Logo" class="nav-logo-img" />
+          <span class="logo-text">Axeloft</span>
+        </a>
+        <nav class="nav-links">
+          <a href="#about" class="nav-link">About</a>
+          <a href="#project" class="nav-link">Umbrashift</a>
+          <a
+            href="https://github.com/Axeloft-Interactive"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="nav-link github-btn"
+          >
+            <svg viewBox="0 0 24 24" class="github-icon">
+              <path
+                fill="currentColor"
+                d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"
+              />
+            </svg>
+            GitHub
+          </a>
+        </nav>
+      </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         HERO — full-screen pixel grid with "Axeloft Interactive"
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="hero" id="hero">
+      <div class="hero-overlay">
+        <a href="#about" class="scroll-hint" aria-label="Scroll down">
+          <span>Scroll</span>
+          <svg viewBox="0 0 24 24">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </a>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         CONTENT — Edit sections below to change studio details
+         ═══════════════════════════════════════════════════════════════════ -->
+    <main class="content">
+      <!-- ── About ──────────────────────────────────────────────────── -->
+      <section class="section" id="about">
+        <div class="about-grid">
+          <div>
+            <span class="about-label">About Us</span>
+            <h1 class="about-heading">
+              Two developers.<br />Endless pixels.
+            </h1>
+            <p class="about-text">
+              Axeloft Interactive is a small game studio, dedicated to creating games that will never be forgotten.
+            </p>
+          </div>
+          <div class="about-stats">
+            <div class="stat-card">
+              <div class="stat-number">2</div>
+              <div class="stat-label">Creators</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">1</div>
+              <div class="stat-label">Core Project</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number digit-roll-container">
+                <div class="digit-strip thousands">
+                  <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span>
+                </div>
+                <div class="digit-strip hundreds">
+                  <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span>
+                </div>
+                <div class="digit-strip tens">
+                  <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span>
+                </div>
+                <div class="digit-strip ones">
+                  <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span>
+                </div>
+              </div>
+              <div class="stat-label">Hours wasted</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">NL</div>
+              <div class="stat-label">Based</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <section class="section" id="our-creators">
+          <h1>Who are we?</h1>
+          <div class="creators-grid">
+            <div class="creator-card">
+              <img class="creator-pfp" src="incomplete_tree.png">
+              <h1 class="creator-name">Incomplete_Tree</h1>
+              <div class="creator-description">The developer</div>
+            </div>
+            <div class="creator-card">
+              <img class="creator-pfp" src="super_mp.png">
+              <h1 class="creator-name">Super_MP</h1>
+              <div class="creator-description">The designer and writer</div>
+            </div>
+          </div>
+      </section>
+      <!-- ── Umbrashift Project ─────────────────────────────────────── -->
+      <section class="section" id="project">
+        <div class="project-showcase">
+          <div class="showcase-header">
+            <span class="about-label">Current Project</span>
+            <h2 class="about-heading">Umbrashift</h2>
+          </div>
+          <div class="project-content">
+            <p class="project-desc">
+              Umbrashift is our flagship atmospheric pixel art game, currently
+              in active development. Journey through a shifting world of shadow and
+              light, where environment manipulation and survival go hand in hand.
+              While the game is not open source, we regularly post updates, technical
+              insights, and design diaries.
+            </p>
+            <div class="action-bar">
+              <a href="/umbrashift" class="btn-primary">
+                Explore Umbrashift
+                <svg viewBox="0 0 24 24" class="btn-arrow">
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Development / GitHub ────────────────────────────────────── -->
+      <section class="section" id="dev">
+        <div class="about-grid">
+          <div>
+            <span class="about-label">Open Dev</span>
+            <h2 class="about-heading">Our GitHub Presence</h2>
+            <p class="about-text">
+              We operate under the GitHub organization
+              <strong>Axeloft-Interactive</strong>. Although Umbrashift itself
+              is a commercial, closed-source title, we build and maintain public
+              development tools, game engine helper scripts, and boilerplate
+              projects that we share with the wider indie community.
+            </p>
+          </div>
+          <div class="github-card">
+            <div class="github-card-header">
+              <div class="github-card-avatar">A</div>
+              <div>
+                <div class="github-org-name">Axeloft-Interactive</div>
+                <div class="github-org-sub">GitHub Organization</div>
+              </div>
+            </div>
+            <p class="github-card-desc">
+              Follow our developments, browse public repositories, and look at
+              open-source helper packages.
+            </p>
+            <a
+              href="https://github.com/Axeloft-Interactive"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn-secondary"
+            >
+              Visit Organization
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ── Footer ───────────────────────────────────────────────────── -->
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <span class="footer-brand">Axeloft Interactive</span>
+        <span class="footer-copy"
+          >&copy; <span id="year"></span> — All rights reserved.</span
+        >
+      </div>
+    </footer>
+
+    <!-- ── Scripts ──────────────────────────────────────────────────── -->
+    <script src="pixel-grid.js"></script>
+    <script>
+      // Load custom config if injected by port wrappers
+      document.addEventListener("DOMContentLoaded", () => {
+        // Boot the pixel grid in the hero section with Port 8086 Design Configuration
+        const hero = document.getElementById("hero");
+        if (hero) {
+          PixelGrid.init(hero, "Axeloft Interactive", {
+            "STEP_LENGTH": 2,
+            "CELL_SIZE": 5,
+            "BORDER_WIDTH": 1,
+            "MAX_FONT_SIZE": 500,
+            "MAX_ELECTRONS": 2500,
+            "BG_COLOR": "#0f1318",
+            "BORDER_COLOR": "#1e1320",
+            "CELL_HIGHLIGHT": "#ff007f",
+            "ELECTRON_COLOR": "#00f0ff",
+            "FONT_COLOR": "#ff007f",
+            "LOGO_COLOR": null, // Randomly selects Cyan (#00f0ff) or Amber (#ffb700) on load
+            "LOGO_HOVER_COLOR": "#ff007f", // Turns Pink on hover
+            "logoSrc": "/logo.svg",
+            "logoAntiAlias": false,
+            "logoGridSize": 2,
+            "logoGridTransition": true,
+            "logoScale": 0.38
+          });
+        }
+
+        // Handle navigation background changes on scroll
+        const topBar = document.querySelector(".top-bar");
+        window.addEventListener("scroll", () => {
+          if (window.scrollY > 50) {
+            topBar.classList.add("scrolled");
+          } else {
+            topBar.classList.remove("scrolled");
+          }
+        });
+
+        // Auto-fill year
+        const yearEl = document.getElementById("year");
+        if (yearEl) yearEl.textContent = new Date().getFullYear();
+      });
+    </script>
   </body>
 </html>
