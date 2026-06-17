@@ -172,7 +172,7 @@
     setTimeout(() => {
       uiPanel.remove();
       const openBtn = document.getElementById("open-sandbox-btn") || Array.from(document.querySelectorAll("button")).find(b => b.innerText === "Open Sandbox");
-      if (openBtn) openBtn.style.display = "block";
+      if (openBtn) openBtn.style.display = "";
     }, 300);
   });
 

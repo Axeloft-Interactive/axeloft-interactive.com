@@ -7,7 +7,6 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
         sandbox: resolve(__dirname, 'sandbox/index.html'),
-        gol: resolve(__dirname, 'gol/index.html'),
         umbrashift: resolve(__dirname, 'umbrashift/index.html')
       }
     }

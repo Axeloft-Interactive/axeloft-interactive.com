@@ -27,7 +27,7 @@ const SandboxGrid = (() => {
     logoAntiAlias: false,     // true = use alpha for cell brightness
     logoGridSize: null,       // e.g. 2 = logo uses CELL_SIZE/2 nested grid (null = same grid)
     logoGridTransition: false, // true = smooth blend at logo grid boundary
-    logoScale: 0.38,          // Default size of logo relative to container height
+    logoScale: 0.42,          // Default size of logo relative to container height
     logoCenterYRatio: 0.28,   // Center Y position of logo (ratio of height)
     LOGO_COLOR: null,         // Hex color for the logo, or null/default to randomly pick Cyan/Amber
     LOGO_HOVER_COLOR: "#ff007f" // Hover target color (defaults to pink to match text)
