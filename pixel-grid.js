@@ -385,6 +385,45 @@ const PixelGrid = (() => {
         ctx.fillRect(0, h, width, config.BORDER_WIDTH);
       for (let w = config.CELL_SIZE; w < width; w += config.CELL_DISTANCE)
         ctx.fillRect(w, 0, config.BORDER_WIDTH, height);
+
+      if (config.logoSrc && config.logoGridSize && config.logoGridSize > 1 && _logoOriginalW) {
+        const logoMaxH = height * config.logoScale;
+        let aspect = _logoOriginalW / _logoOriginalH;
+        let logoW = logoMaxH * aspect;
+        if (logoW > width * 0.35) {
+          logoW = width * 0.35;
+        }
+        let logoH = logoW / aspect;
+        
+        const logoCenterX = width / 2;
+        const logoCenterY = height * config.logoCenterYRatio;
+        
+        const pad = config.logoGridTransition ? config.CELL_DISTANCE * 3 : 0;
+        // Use max scale 1.35 to ensure the grid covers the expanded logo
+        const maxScale = 1.35;
+        const boxW = logoW * maxScale + pad * 2;
+        const boxH = logoH * maxScale + pad * 2;
+        
+        const x1 = logoCenterX - boxW / 2;
+        const y1 = logoCenterY - boxH / 2;
+        const x2 = logoCenterX + boxW / 2;
+        const y2 = logoCenterY + boxH / 2;
+        
+        const logoCellSize = Math.max(1, Math.round(config.CELL_SIZE / config.logoGridSize));
+        const logoBorderWidth = Math.max(1, Math.round(config.BORDER_WIDTH / config.logoGridSize));
+        const logoCellDist = logoCellSize + logoBorderWidth;
+
+        for (let y = Math.floor(y1); y <= y2; y += logoCellDist) {
+          if (y >= 0 && y <= height) {
+             ctx.fillRect(Math.max(0, x1), y, Math.min(width, x2) - Math.max(0, x1), logoBorderWidth);
+          }
+        }
+        for (let x = Math.floor(x1); x <= x2; x += logoCellDist) {
+          if (x >= 0 && x <= width) {
+             ctx.fillRect(x, Math.max(0, y1), logoBorderWidth, Math.min(height, y2) - Math.max(0, y1));
+          }
+        }
+      }
     });
   }
 
@@ -404,6 +443,12 @@ const PixelGrid = (() => {
     let wi = 0;
     for (let i = 0; i < list.length; i++) {
       if (now >= list[i].expireAt) continue;
+      
+      if (list[i].isLogo && list[i].alpha <= 0.05) {
+        list[wi++] = list[i];
+        continue;
+      }
+
       list[i].paintNextTo(mainLayer);
       list[wi++] = list[i];
     }
@@ -434,11 +479,23 @@ const PixelGrid = (() => {
       const i = Math.floor(cy / config.CELL_DISTANCE);
       const j = Math.floor(cx / config.CELL_DISTANCE);
       if (isMove && isSameCell(i, j)) return;
+      
+      let hoverColor = config.CELL_HIGHLIGHT;
+      if (config.logoSrc && _shapeLayer) {
+        const logoCenterX = _shapeLayer.width / 2;
+        const logoCenterY = _shapeLayer.height * config.logoCenterYRatio;
+        const dx = cx - logoCenterX;
+        const dy = cy - logoCenterY;
+        if (Math.sqrt(dx*dx + dy*dy) < 250) {
+          hoverColor = config.LOGO_COLOR || hoverColor;
+        }
+      }
+
       const cell = new Cell(i, j, {
-        background: config.CELL_HIGHLIGHT,
+        background: hoverColor,
         forceElectrons: true,
         electronCount: isMove ? 2 : 4,
-        electronOptions: { speed: 3, lifeTime: isMove ? 500 : 1000, color: config.CELL_HIGHLIGHT },
+        electronOptions: { speed: 3, lifeTime: isMove ? 500 : 1000, color: hoverColor },
       });
       cell.paintNextTo(mainLayer);
     }
@@ -493,27 +550,8 @@ const PixelGrid = (() => {
 
     // Compute layout regions using custom logo ratios
     const textCenterY = hasLogo ? height * 0.68 : height / 2;
-    const logoMaxH = height * config.logoScale;
-    const logoCenterY = height * config.logoCenterYRatio;
 
     shapeLayer.repaint((ctx) => {
-      // ── Draw logo if available ──
-      if (hasLogo) {
-        let aspect = logoImg.naturalWidth / logoImg.naturalHeight;
-        if (isNaN(aspect) || !isFinite(aspect) || aspect <= 0) aspect = 1;
-
-        let logoH = logoMaxH;
-        let logoW = logoH * aspect;
-        // Cap width to 35% of viewport
-        if (logoW > width * 0.35) {
-          logoW = width * 0.35;
-          logoH = logoW / aspect;
-        }
-        const logoX = (width - logoW) / 2;
-        const logoY = logoCenterY - logoH / 2;
-        ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
-      }
-
       // ── Draw text ──
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -546,50 +584,13 @@ const PixelGrid = (() => {
 
   function getShapeMatrix(shapeLayer, text, logoImg) {
     const { width, height } = shapeLayer;
-    const hasLogo = !!logoImg;
     const useAA = config.logoAntiAlias;
-    const useNestedGrid = hasLogo && config.logoGridSize != null && config.logoGridSize > 0;
 
     // Render everything to the shape layer
     renderShapeToLayer(shapeLayer, text, logoImg);
 
     const pixels = shapeLayer.context.getImageData(0, 0, width, height).data;
     const cells = []; // Each entry: { row, col, alpha, cellSize, cellDistance, isLogo }
-
-    // Compute logo bounding box for nested grid detection
-    let logoBBox = null;
-    if (hasLogo) {
-      let aspect = logoImg.naturalWidth / logoImg.naturalHeight;
-      if (isNaN(aspect) || !isFinite(aspect) || aspect <= 0) aspect = 1;
-
-      const logoMaxH = height * config.logoScale;
-      const logoCenterY = height * config.logoCenterYRatio;
-      let logoH = logoMaxH;
-      let logoW = logoH * aspect;
-      if (logoW > width * 0.35) {
-        logoW = width * 0.35;
-        logoH = logoW / aspect;
-      }
-      const logoX = (width - logoW) / 2;
-      const logoY = logoCenterY - logoH / 2;
-      // Add padding for transition zone
-      const pad = config.logoGridTransition ? config.CELL_DISTANCE * 3 : 0;
-      logoBBox = {
-        x1: logoX - pad,
-        y1: logoY - pad,
-        x2: logoX + logoW + pad,
-        y2: logoY + logoH + pad,
-        ix1: logoX,
-        iy1: logoY,
-        ix2: logoX + logoW,
-        iy2: logoY + logoH,
-      };
-    }
-
-    // The fine cell size for logo
-    const logoCellSize = useNestedGrid ? Math.max(1, Math.round(config.CELL_SIZE / config.logoGridSize)) : config.CELL_SIZE;
-    const logoBorderWidth = useNestedGrid ? Math.max(1, Math.round(config.BORDER_WIDTH / config.logoGridSize)) : config.BORDER_WIDTH;
-    const logoCellDist = logoCellSize + logoBorderWidth;
 
     // Sample at the normal grid
     const CD = config.CELL_DISTANCE;
@@ -599,58 +600,14 @@ const PixelGrid = (() => {
         const alpha = pixels[(x + y * width) * 4 + 3] / 255;
         if (alpha <= 0) continue;
 
-        const inLogoBBox = logoBBox && x >= logoBBox.x1 && x <= logoBBox.x2 && y >= logoBBox.y1 && y <= logoBBox.y2;
-
-        if (useNestedGrid && inLogoBBox) {
-          // Skip — this area will be handled by the fine grid pass below
-          continue;
-        }
-
         cells.push({
           row: Math.floor(y / CD),
           col: Math.floor(x / CD),
           alpha: useAA ? alpha : 1,
           cellSize: config.CELL_SIZE,
           cellDistance: CD,
-          isLogo: !!inLogoBBox
+          isLogo: false // Ensure text cells are not marked as logo
         });
-      }
-    }
-
-    // Fine grid pass for logo area
-    if (useNestedGrid && logoBBox) {
-      for (let y = Math.max(0, Math.floor(logoBBox.y1)); y < Math.min(height, logoBBox.y2); y += logoCellDist) {
-        for (let x = Math.max(0, Math.floor(logoBBox.x1)); x < Math.min(width, logoBBox.x2); x += logoCellDist) {
-          const alpha = pixels[(Math.min(x, width - 1) + Math.min(y, height - 1) * width) * 4 + 3] / 255;
-          if (alpha <= 0) continue;
-
-          let effectiveAlpha = useAA ? alpha : 1;
-
-          // Smooth transition at the boundary
-          if (config.logoGridTransition && logoBBox) {
-            const pad = config.CELL_DISTANCE * 3;
-            let edgeDist = Infinity;
-            edgeDist = Math.min(edgeDist,
-              x - logoBBox.ix1, logoBBox.ix2 - x,
-              y - logoBBox.iy1, logoBBox.iy2 - y
-            );
-            if (edgeDist < 0) {
-              const t = Math.max(0, 1 + edgeDist / pad);
-              effectiveAlpha *= t;
-              if (effectiveAlpha <= 0.05) continue;
-            }
-          }
-
-          cells.push({
-            row: y,
-            col: x,
-            alpha: effectiveAlpha,
-            cellSize: logoCellSize,
-            cellDistance: logoCellDist,
-            isPixelCoord: true,
-            isLogo: true
-          });
-        }
       }
     }
 
@@ -659,13 +616,55 @@ const PixelGrid = (() => {
 
   function printShape(shapeLayer, text, logoImg) {
     PINNED_CELLS.length = 0;
-    const cells = shuffle(getShapeMatrix(shapeLayer, text, logoImg));
+    const cells = getShapeMatrix(shapeLayer, text, logoImg);
     const useAA = config.logoAntiAlias;
 
     const logoCenterX = shapeLayer.width / 2;
     const logoCenterY = shapeLayer.height * config.logoCenterYRatio;
 
-    cells.forEach((c) => {
+    if (logoImg && _logoOriginalW) {
+      const { width, height } = shapeLayer;
+      const logoMaxH = height * config.logoScale;
+      let aspect = _logoOriginalW / _logoOriginalH;
+      let logoW = logoMaxH * aspect;
+      if (logoW > width * 0.35) {
+        logoW = width * 0.35;
+      }
+      let logoH = logoW / aspect;
+      
+      const maxScale = 1.35;
+      const pad = config.logoGridTransition ? config.CELL_DISTANCE * 3 : 0;
+      const boxW = logoW * maxScale + pad * 2;
+      const boxH = logoH * maxScale + pad * 2;
+      
+      const x1 = logoCenterX - boxW / 2;
+      const y1 = logoCenterY - boxH / 2;
+      const x2 = logoCenterX + boxW / 2;
+      const y2 = logoCenterY + boxH / 2;
+      
+      const useNestedGrid = config.logoGridSize != null && config.logoGridSize > 0;
+      const logoCellSize = useNestedGrid ? Math.max(1, Math.round(config.CELL_SIZE / config.logoGridSize)) : config.CELL_SIZE;
+      const logoBorderWidth = useNestedGrid ? Math.max(1, Math.round(config.BORDER_WIDTH / config.logoGridSize)) : config.BORDER_WIDTH;
+      const logoCellDist = logoCellSize + logoBorderWidth;
+
+      for (let y = Math.max(0, Math.floor(y1)); y < Math.min(height, y2); y += logoCellDist) {
+        for (let x = Math.max(0, Math.floor(x1)); x < Math.min(width, x2); x += logoCellDist) {
+           cells.push({
+             row: y, // pixel coordinate
+             col: x,
+             alpha: 0,
+             cellSize: logoCellSize,
+             cellDistance: logoCellDist,
+             isPixelCoord: true,
+             isLogo: true
+           });
+        }
+      }
+    }
+
+    const shuffledCells = shuffle(cells);
+
+    shuffledCells.forEach((c) => {
       const activeColor = c.isLogo && config.LOGO_COLOR ? config.LOGO_COLOR : config.FONT_COLOR;
       const rgb = hexToRgb(activeColor);
 
@@ -692,21 +691,25 @@ const PixelGrid = (() => {
 
       const cell = new Cell(row, col, {
         background: bg,
-        // DENSE NESTED GRID: Reduce spawn probability to avoid visual "cloud" clustering.
-        // Only 5% of nested logo cells spawn active electron trails.
-        electronCount: c.isLogo 
-          ? (Math.random() > 0.95 ? 1 : 0)
-          : (Math.random() > 0.9 ? 1 : 0),
+        electronCount: c.isLogo ? 0 : (Math.random() > 0.9 ? 1 : 0),
         electronOptions: { speed: 2, color: eColor, lifeTime: 300 + randomInt(0, 200) },
         cellSize: c.cellSize,
-        cellDistance: cellDist,
+        cellDistance: c.cellDistance,
       });
+
+      if (c.isPixelCoord) {
+        cell.startX = col;
+        cell.startY = row;
+      }
 
       if (c.isLogo) {
         cell.isLogo = true;
-        cell.baseOffsetX = startX - logoCenterX;
-        cell.baseOffsetY = startY - logoCenterY;
+        cell.baseOffsetX = cell.startX - logoCenterX;
+        cell.baseOffsetY = cell.startY - logoCenterY;
         cell.baseBackground = bg;
+        cell.alpha = 0;
+        cell.wasActive = false;
+      } else {
         cell.alpha = c.alpha;
       }
 
@@ -765,14 +768,75 @@ const PixelGrid = (() => {
     const g = Math.round(_currentLogoRgb.g);
     const b = Math.round(_currentLogoRgb.b);
 
+    const useAA = config.logoAntiAlias;
+    const { width, height } = _shapeLayer;
+    
+    let logoW = 0;
+    let logoH = 0;
+    if (_logoOriginalW) {
+      const logoMaxH = height * config.logoScale;
+      let aspect = _logoOriginalW / _logoOriginalH;
+      logoW = logoMaxH * aspect;
+      if (logoW > width * 0.35) {
+        logoW = width * 0.35;
+      }
+      logoH = logoW / aspect;
+    }
+
     PINNED_CELLS.forEach((cell) => {
       if (cell.isLogo) {
-        cell.startX = logoCenterX + cell.baseOffsetX * _currentLogoScale;
-        cell.startY = logoCenterY + cell.baseOffsetY * _currentLogoScale;
+        if (!_logoImageData) return;
         
-        cell.background = config.logoAntiAlias && cell.alpha < 1
-          ? `rgba(${r},${g},${b},${cell.alpha})`
-          : `rgb(${r},${g},${b})`;
+        const unscaledOffsetX = cell.baseOffsetX / _currentLogoScale;
+        const unscaledOffsetY = cell.baseOffsetY / _currentLogoScale;
+        
+        const imgX = Math.floor((unscaledOffsetX + logoW / 2) / logoW * _logoOriginalW);
+        const imgY = Math.floor((unscaledOffsetY + logoH / 2) / logoH * _logoOriginalH);
+
+        let alpha = 0;
+        if (imgX >= 0 && imgX < _logoOriginalW && imgY >= 0 && imgY < _logoOriginalH) {
+          const idx = (imgY * _logoOriginalW + imgX) * 4 + 3;
+          alpha = _logoImageData[idx] / 255;
+        }
+
+        if (config.logoGridTransition && alpha > 0) {
+          const pad = config.CELL_DISTANCE * 3;
+          const scaledLogoW = logoW * _currentLogoScale;
+          const scaledLogoH = logoH * _currentLogoScale;
+          const ix1 = logoCenterX - scaledLogoW / 2;
+          const ix2 = logoCenterX + scaledLogoW / 2;
+          const iy1 = logoCenterY - scaledLogoH / 2;
+          const iy2 = logoCenterY + scaledLogoH / 2;
+
+          let edgeDist = Math.min(
+            cell.startX - ix1, ix2 - cell.startX,
+            cell.startY - iy1, iy2 - cell.startY
+          );
+
+          if (edgeDist < 0) {
+            const t = Math.max(0, 1 + edgeDist / pad);
+            alpha *= t;
+          }
+        }
+
+        cell.alpha = alpha;
+
+        if (alpha > 0.05) {
+          cell.background = useAA && alpha < 1
+            ? `rgba(${r},${g},${b},${alpha})`
+            : `rgb(${r},${g},${b})`;
+            
+          if (!cell.wasActive) {
+            cell.wasActive = true;
+            cell.electronCount = Math.random() > 0.95 ? 1 : 0;
+            // Also color the electron with the current animated logo color!
+            cell.electronOptions.color = cell.background;
+          }
+        } else {
+          cell.background = "transparent";
+          cell.electronCount = 0;
+          cell.wasActive = false;
+        }
       }
     });
   }
@@ -784,6 +848,9 @@ const PixelGrid = (() => {
   let _isAlive = false;
   let _lastText = "";
   let _logoImg = null;
+  let _logoOriginalW = 0;
+  let _logoOriginalH = 0;
+  let _logoImageData = null;
   let _nextRandomAt = 0;
 
   async function init(container, text = "Axeloft", options = {}) {
@@ -806,6 +873,16 @@ const PixelGrid = (() => {
     if (config.logoSrc) {
       try {
         _logoImg = await loadImage(config.logoSrc);
+        _logoOriginalW = _logoImg.naturalWidth;
+        _logoOriginalH = _logoImg.naturalHeight;
+        if (_logoOriginalW > 0 && _logoOriginalH > 0) {
+          const off = document.createElement("canvas");
+          off.width = _logoOriginalW;
+          off.height = _logoOriginalH;
+          const octx = off.getContext("2d", { willReadFrequently: true });
+          octx.drawImage(_logoImg, 0, 0);
+          _logoImageData = octx.getImageData(0, 0, _logoOriginalW, _logoOriginalH).data;
+        }
       } catch (e) {
         console.warn("PixelGrid: Failed to load logo:", e);
         _logoImg = null;
