@@ -30,7 +30,10 @@ const SandboxGrid = (() => {
     logoScale: 0.42,          // Default size of logo relative to container height
     logoCenterYRatio: 0.28,   // Center Y position of logo (ratio of height)
     LOGO_COLOR: null,         // Hex color for the logo, or null/default to randomly pick Cyan/Amber
-    LOGO_HOVER_COLOR: "#ff007f" // Hover target color (defaults to pink to match text)
+    LOGO_HOVER_COLOR: "#ff007f", // Hover target color (defaults to pink to match text)
+    logoColorStatic: false,   // Disable color cycling and hover target coloring
+    subText: null,            // Subtitle text to render in grid
+    subTextUnderline: false   // Underline subtitle text
   };
 
   const ACTIVE_ELECTRONS = [];
@@ -90,6 +93,10 @@ const SandboxGrid = (() => {
       g: parseInt(h.substring(2, 4), 16),
       b: parseInt(h.substring(4, 6), 16),
     };
+  }
+
+  function rgbToHex(r, g, b) {
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
   }
 
   function loadImage(src) {
@@ -701,9 +708,10 @@ const SandboxGrid = (() => {
     const hasLogo = !!logoImg;
 
     // Compute layout regions using custom logo ratios
-    const textCenterY = hasLogo ? height * 0.68 : height / 2;
+    const textCenterY = hasLogo ? (config.subText ? height * 0.62 : height * 0.68) : height / 2;
 
     shapeLayer.repaint((ctx) => {
+      ctx.fillStyle = config.FONT_COLOR || "#ff007f";
       // ── Draw text ──
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -731,6 +739,34 @@ const SandboxGrid = (() => {
         ctx.font = `bold ${fontSize}px ${config.FONT_FAMILY}`;
         ctx.fillText(text, width / 2, textCenterY);
       }
+
+      if (config.subText) {
+        ctx.save();
+        ctx.font = `bold ${config.MAX_FONT_SIZE}px ${config.FONT_FAMILY}`;
+        const smw = ctx.measureText(config.subText).width || 1;
+        const sscale = width / smw;
+        const subFontSize = Math.min(config.MAX_FONT_SIZE * 0.5, config.MAX_FONT_SIZE * sscale * 0.5);
+        ctx.font = `bold ${subFontSize}px ${config.FONT_FAMILY}`;
+        ctx.letterSpacing = isMobile ? "2px" : "6px";
+        
+        const subTextY = height * 0.78;
+        ctx.fillText(config.subText, width / 2, subTextY);
+        
+        if (config.subTextUnderline) {
+          const textWidth = ctx.measureText(config.subText).width;
+          const startX = (width - textWidth) / 2;
+          const endX = startX + textWidth;
+          const lineY = subTextY + subFontSize * 0.7;
+          
+          ctx.strokeStyle = "#ffb700";
+          ctx.lineWidth = Math.max(2, subFontSize * 0.08);
+          ctx.beginPath();
+          ctx.moveTo(startX, lineY);
+          ctx.lineTo(endX, lineY);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
     });
   }
 
@@ -742,14 +778,18 @@ const SandboxGrid = (() => {
     renderShapeToLayer(shapeLayer, text, logoImg);
 
     const pixels = shapeLayer.context.getImageData(0, 0, width, height).data;
-    const cells = []; // Each entry: { row, col, alpha, cellSize, cellDistance, isLogo }
+    const cells = []; // Each entry: { row, col, alpha, cellSize, cellDistance, isLogo, color }
 
     // Sample at the normal grid
     const CD = config.CELL_DISTANCE;
 
     for (let y = 0; y < height; y += CD) {
       for (let x = 0; x < width; x += CD) {
-        const alpha = pixels[(x + y * width) * 4 + 3] / 255;
+        const idx = (x + y * width) * 4;
+        const r = pixels[idx];
+        const g = pixels[idx + 1];
+        const b = pixels[idx + 2];
+        const alpha = pixels[idx + 3] / 255;
         if (alpha <= 0) continue;
 
         cells.push({
@@ -758,7 +798,8 @@ const SandboxGrid = (() => {
           alpha: useAA ? alpha : 1,
           cellSize: config.CELL_SIZE,
           cellDistance: CD,
-          isLogo: false // Ensure text cells are not marked as logo
+          isLogo: false, // Ensure text cells are not marked as logo
+          color: rgbToHex(r, g, b)
         });
       }
     }
@@ -817,7 +858,7 @@ const SandboxGrid = (() => {
     const shuffledCells = shuffle(cells);
 
     shuffledCells.forEach((c) => {
-      const activeColor = c.isLogo && config.LOGO_COLOR ? config.LOGO_COLOR : config.FONT_COLOR;
+      const activeColor = c.isLogo && config.LOGO_COLOR ? config.LOGO_COLOR : (c.color || config.FONT_COLOR);
       const rgb = hexToRgb(activeColor);
 
       const bg = useAA && c.alpha < 1
@@ -890,12 +931,14 @@ const SandboxGrid = (() => {
         isCurrentlyHovered = true;
         const t = 1.0 - distance / radius; // 0 (far) to 1 (close)
         targetScale = 1.0 + 0.35 * t; // scale up to 1.35x
-        targetColorHex = config.LOGO_HOVER_COLOR || "#ff007f"; // Hover target (Pink)
+        if (!config.logoColorStatic) {
+          targetColorHex = config.LOGO_HOVER_COLOR || "#ff007f"; // Hover target (Pink)
+        }
       }
     }
 
     // Toggle color loadout on mouse exit / leave:
-    if (_wasHovered && !isCurrentlyHovered) {
+    if (_wasHovered && !isCurrentlyHovered && !config.logoColorStatic) {
       if (config.LOGO_COLOR === "#00f0ff") {
         config.LOGO_COLOR = "#ffb700"; // Switch from Cyan to Amber
       } else {
@@ -1063,10 +1106,33 @@ const SandboxGrid = (() => {
     _mainLayer = new ScopedCanvas(container);
     _shapeLayer = new ScopedCanvas(container, true);
 
+    function updateBackLinkPosition() {
+      const backLink = document.getElementById("back-link");
+      if (backLink && _shapeLayer) {
+        const width = _shapeLayer.width;
+        const height = _shapeLayer.height;
+        const isMobile = width < 768;
+        
+        const tempCtx = _shapeLayer.context;
+        tempCtx.save();
+        tempCtx.font = `bold ${config.MAX_FONT_SIZE}px ${config.FONT_FAMILY}`;
+        const subText = config.subText || "Back to homepage";
+        const smw = tempCtx.measureText(subText).width || 1;
+        const sscale = width / smw;
+        const subFontSize = Math.min(config.MAX_FONT_SIZE * 0.5, config.MAX_FONT_SIZE * sscale * 0.5);
+        tempCtx.restore();
+        
+        backLink.style.fontSize = `${subFontSize}px`;
+        backLink.style.letterSpacing = isMobile ? "2px" : "6px";
+        backLink.style.top = `${height * 0.78}px`;
+      }
+    }
+
     _bgLayer.onResize(() => drawGrid(_bgLayer));
     _mainLayer.onResize(() => {
       prepaint();
       if (_lastText) printShape(_shapeLayer, _lastText, _logoImg);
+      updateBackLinkPosition();
     });
     _shapeLayer.onResize(() => {
       if (_lastText) printShape(_shapeLayer, _lastText, _logoImg);
@@ -1077,6 +1143,7 @@ const SandboxGrid = (() => {
 
     _lastText = text;
     printShape(_shapeLayer, text, _logoImg);
+    updateBackLinkPosition();
 
     function renderLoop() {
       if (!_isAlive || !_isVisible) return;
