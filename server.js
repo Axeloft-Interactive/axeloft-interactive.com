@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
 const DIST_DIR = path.join(__dirname, 'dist');
-const MAILING_LIST_PATH = process.env.MAILING_LIST_PATH || path.join(__dirname, 'mailing-list.txt');
+const MAILING_LIST_PATH = process.env.MAILING_LIST_PATH || '/app/data/mailing-list.txt';
 
 // Simple MIME types map for serving static files
 const MIME_TYPES = {

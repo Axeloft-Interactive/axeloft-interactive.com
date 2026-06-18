@@ -29,9 +29,6 @@ WORKDIR /app
 COPY --from=builder /app/dist ./dist
 COPY server.js ./
 
-# Copy original mailing-list.txt as a fallback/starting point
-COPY mailing-list.txt ./
-
 # Environment defaults
 ENV PORT=3000
 EXPOSE 3000
