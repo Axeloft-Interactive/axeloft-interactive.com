@@ -158,6 +158,41 @@
           </div>
         </div>
       </section>
+
+      <!-- ── Mailing List ───────────────────────────────────────────── -->
+      <section class="section" id="mailing-list">
+        <div class="mailing-list-card">
+          <div class="showcase-header">
+            <h2 class="about-heading">Join the Mailing List</h2>
+          </div>
+          <div class="project-content">
+            <p class="mailing-list-desc">
+              Subscribe to get notified of major milestones and releases. We will email you less than once per year, so we won't flood your inbox. Your email address will never be sold.
+            </p>
+            <form id="subscribe-form" class="subscribe-form" novalidate>
+              <div class="form-group">
+                <label for="email" class="visually-hidden">Email Address</label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  placeholder="Enter your email address"
+                  required
+                  autocomplete="email"
+                />
+                <button type="submit" class="btn-primary">
+                  <span>Subscribe</span>
+                  <svg viewBox="0 0 24 24" class="btn-arrow">
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                    <polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </button>
+              </div>
+              <div class="form-status" id="form-status" aria-live="polite"></div>
+            </form>
+          </div>
+        </div>
+      </section>
     </main>
 
     <!-- ── Footer ───────────────────────────────────────────────────── -->
@@ -304,6 +339,61 @@
         // Auto-fill year
         const yearEl = document.getElementById("year");
         if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+        // Mailing List Subscription Handler
+        const subscribeForm = document.getElementById("subscribe-form");
+        const formStatus = document.getElementById("form-status");
+        if (subscribeForm && formStatus) {
+          subscribeForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            
+            const emailInput = document.getElementById("email");
+            const email = emailInput.value.trim();
+            const submitBtn = subscribeForm.querySelector("button[type='submit']");
+            
+            // Basic client-side validation
+            if (!email || !email.includes("@")) {
+              formStatus.textContent = "Please enter a valid email address.";
+              formStatus.className = "form-status error";
+              return;
+            }
+            
+            // Set loading state
+            submitBtn.disabled = true;
+            const btnTextSpan = submitBtn.querySelector("span");
+            const originalBtnText = btnTextSpan.textContent;
+            btnTextSpan.textContent = "Subscribing...";
+            formStatus.textContent = "";
+            formStatus.className = "form-status";
+            
+            try {
+              const response = await fetch("/api/subscribe", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ email }),
+              });
+              
+              const result = await response.json();
+              
+              if (response.ok && result.success) {
+                formStatus.textContent = "Thank you! You have been subscribed.";
+                formStatus.className = "form-status success";
+                emailInput.value = "";
+              } else {
+                formStatus.textContent = result.error || "Something went wrong. Please try again.";
+                formStatus.className = "form-status error";
+              }
+            } catch (err) {
+              formStatus.textContent = "Network error. Please try again later.";
+              formStatus.className = "form-status error";
+            } finally {
+              submitBtn.disabled = false;
+              btnTextSpan.textContent = originalBtnText;
+            }
+          });
+        }
       });
     </script>
   </body>

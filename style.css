@@ -626,6 +626,127 @@ body {
   color: #475569;
 }
 
+/* ─── Visually Hidden Utility ─────────────────────────────────────── */
+.visually-hidden {
+  position: absolute;
+  clip-path: inset(50%);
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  white-space: nowrap;
+}
+
+/* ─── Mailing List Section ────────────────────────────────────────── */
+.mailing-list-card {
+  background: radial-gradient(circle at 0% 100%, rgba(255, 0, 127, 0.04), transparent 50%),
+              rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 1.5rem;
+  padding: 4.5rem 4rem;
+  transition: border-color 0.3s ease, background 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.mailing-list-card:hover {
+  border-color: rgba(255, 0, 127, 0.2);
+}
+
+.mailing-list-desc {
+  font-size: 1.1rem;
+  color: #94a3b8;
+  line-height: 1.9;
+  margin-bottom: 2rem;
+  max-width: 44rem;
+}
+
+.subscribe-form {
+  max-width: 36rem;
+}
+
+.subscribe-form .form-group {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  position: relative;
+}
+
+.subscribe-form input[type="email"] {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  padding: 0.9rem 1.25rem;
+  font-family: inherit;
+  font-size: 1rem;
+  color: #fff;
+  outline: none;
+  min-height: 48px;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.subscribe-form input[type="email"]:focus {
+  border-color: #ff007f;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 0 0 3px rgba(255, 0, 127, 0.15);
+}
+
+.subscribe-form input[type="email"]::placeholder {
+  color: #475569;
+}
+
+.subscribe-form .btn-primary {
+  flex-shrink: 0;
+  cursor: pointer;
+  background: #ff007f;
+  color: #fff;
+  min-height: 48px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.subscribe-form .btn-primary:hover {
+  background: #ff3399;
+  box-shadow: 0 10px 30px -10px rgba(255, 0, 127, 0.4);
+}
+
+.subscribe-form .btn-primary:disabled {
+  background: #475569;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.form-status {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  min-height: 1.5rem;
+  transition: opacity 0.2s ease;
+}
+
+.form-status.success {
+  color: #4ade80;
+}
+
+.form-status.error {
+  color: #f87171;
+}
+
+@media (max-width: 600px) {
+  .subscribe-form .form-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .subscribe-form .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 /* ─── Responsive ──────────────────────────────────────────────────── */
 @media (max-width: 992px) {
   .about-grid {
