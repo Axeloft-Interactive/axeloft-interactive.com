@@ -38,6 +38,7 @@ const SandboxGrid = (() => {
 
   const ACTIVE_ELECTRONS = [];
   const PINNED_CELLS = [];
+  let _ghostRect = null;
 
   let MOVE_TRAILS = [];
   let END_POINTS_OFFSET = [];
@@ -384,6 +385,51 @@ const SandboxGrid = (() => {
     ACTIVE_ELECTRONS.length = wi;
   }
 
+  function drawGhostRect(ctx) {
+    if (!_ghostRect) return;
+    const c1 = getCellCoords(_ghostRect.x1, _ghostRect.y1);
+    const c2 = getCellCoords(_ghostRect.x2, _ghostRect.y2);
+    const minRow = Math.min(c1.row, c2.row);
+    const maxRow = Math.max(c1.row, c2.row);
+    const minCol = Math.min(c1.col, c2.col);
+    const maxCol = Math.max(c1.col, c2.col);
+
+    ctx.save();
+    
+    let color = _ghostRect.colorHex;
+    if (color === "rainbow") {
+      color = config.LOGO_COLOR || "#00f0ff";
+    }
+    const rgb = hexToRgb(color);
+
+    if (_ghostRect.type === 'paint') {
+      ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.25)`;
+      ctx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.75)`;
+    } else {
+      ctx.fillStyle = "rgba(255, 60, 60, 0.2)";
+      ctx.strokeStyle = "rgba(255, 60, 60, 0.75)";
+    }
+
+    for (let r = minRow; r <= maxRow; r++) {
+      for (let col = minCol; col <= maxCol; col++) {
+        const x = col * config.CELL_DISTANCE;
+        const y = r * config.CELL_DISTANCE;
+        ctx.fillRect(x, y, config.CELL_SIZE, config.CELL_SIZE);
+      }
+    }
+
+    const bx1 = minCol * config.CELL_DISTANCE - config.BORDER_WIDTH / 2;
+    const by1 = minRow * config.CELL_DISTANCE - config.BORDER_WIDTH / 2;
+    const bx2 = (maxCol + 1) * config.CELL_DISTANCE - config.BORDER_WIDTH / 2;
+    const by2 = (maxRow + 1) * config.CELL_DISTANCE - config.BORDER_WIDTH / 2;
+
+    ctx.setLineDash([4, 3]);
+    ctx.lineWidth = 1;
+    ctx.strokeRect(bx1, by1, bx2 - bx1, by2 - by1);
+
+    ctx.restore();
+  }
+
   // ── Grid drawing ───────────────────────────────────────────────────────
   function drawGrid(bgLayer) {
     bgLayer.paint((ctx, { width, height }) => {
@@ -533,6 +579,76 @@ const SandboxGrid = (() => {
         }
       }
     }
+  }
+
+  function paintRect(px1, py1, px2, py2, colorHex, alpha, electronCount) {
+    const c1 = getCellCoords(px1, py1);
+    const c2 = getCellCoords(px2, py2);
+    
+    const minRow = Math.min(c1.row, c2.row);
+    const maxRow = Math.max(c1.row, c2.row);
+    const minCol = Math.min(c1.col, c2.col);
+    const maxCol = Math.max(c1.col, c2.col);
+    
+    for (let row = minRow; row <= maxRow; row++) {
+      for (let col = minCol; col <= maxCol; col++) {
+        const existingIdx = PINNED_CELLS.findIndex(cell => 
+          Math.abs(cell.startX - col * config.CELL_DISTANCE) < 0.1 && 
+          Math.abs(cell.startY - row * config.CELL_DISTANCE) < 0.1
+        );
+        if (existingIdx !== -1) PINNED_CELLS.splice(existingIdx, 1);
+        
+        const isRainbow = colorHex === "rainbow";
+        const resolvedColor = isRainbow ? (config.LOGO_COLOR || "#00f0ff") : colorHex;
+        const rgb = hexToRgb(resolvedColor);
+        const bg = alpha < 1 ? `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})` : resolvedColor;
+        
+        let elCount = 0;
+        if (typeof electronCount === "function") {
+          elCount = electronCount();
+        } else if (typeof electronCount === "number") {
+          elCount = electronCount;
+        }
+
+        const cell = new Cell(row, col, {
+          background: bg,
+          electronCount: elCount,
+          electronOptions: { speed: 2, color: bg, lifeTime: 300 + randomInt(0, 200) },
+          cellSize: config.CELL_SIZE,
+          cellDistance: config.CELL_DISTANCE
+        });
+        cell.isRainbow = isRainbow;
+        cell.alpha = alpha;
+        cell.pin();
+      }
+    }
+  }
+
+  function eraseRect(px1, py1, px2, py2) {
+    const c1 = getCellCoords(px1, py1);
+    const c2 = getCellCoords(px2, py2);
+    
+    const minRow = Math.min(c1.row, c2.row);
+    const maxRow = Math.max(c1.row, c2.row);
+    const minCol = Math.min(c1.col, c2.col);
+    const maxCol = Math.max(c1.col, c2.col);
+    
+    const newPinned = [];
+    for (let c of PINNED_CELLS) {
+      const r = Math.round(c.startY / config.CELL_DISTANCE);
+      const col = Math.round(c.startX / config.CELL_DISTANCE);
+      if (r >= minRow && r <= maxRow && col >= minCol && col <= maxCol) {
+        // Erased
+      } else {
+        newPinned.push(c);
+      }
+    }
+    PINNED_CELLS.length = 0;
+    PINNED_CELLS.push(...newPinned);
+  }
+
+  function setGhostRect(rect) {
+    _ghostRect = rect;
   }
 
   function exportState() {
@@ -1152,6 +1268,11 @@ const SandboxGrid = (() => {
 
       _mainLayer.blendBackground(_bgLayer.canvas);
       compactAndPaint(PINNED_CELLS, _mainLayer);
+      if (_ghostRect) {
+        _mainLayer.paint((ctx) => {
+          drawGhostRect(ctx);
+        });
+      }
       drawElectronsBatch(_mainLayer);
 
       const now = Date.now();
@@ -1201,7 +1322,7 @@ const SandboxGrid = (() => {
     _logoImg = null;
   }
 
-  return { init, destroy, paintAt, eraseAt, exportState, importState, clearAll, printShape, getContainer, getConfig: () => config, addShape: (t, img) => { if(_shapeLayer) printShape(_shapeLayer, t, img, false); } };
+  return { init, destroy, paintAt, eraseAt, paintRect, eraseRect, setGhostRect, exportState, importState, clearAll, printShape, getContainer, getConfig: () => config, addShape: (t, img) => { if(_shapeLayer) printShape(_shapeLayer, t, img, false); } };
 })();
 
 window.SandboxGrid = SandboxGrid;

@@ -70,6 +70,12 @@
     
     let isPainting = false;
     let isErasing = false;
+    let isRectDrawing = false;
+    let rectStartX = null;
+    let rectStartY = null;
+    let rectEndX = null;
+    let rectEndY = null;
+    let rectType = null; // 'paint' or 'erase'
     let lastX = null;
     let lastY = null;
     let hasDrawn = false;
@@ -79,21 +85,52 @@
   hero.addEventListener("mousedown", (e) => {
     const ui = document.getElementById("sandbox-ui");
     if (ui) {
-      if (e.button === 0) isPainting = true;
-      if (e.button === 2) isErasing = true;
       const rect = hero.getBoundingClientRect();
-      lastX = e.clientX - rect.left;
-      lastY = e.clientY - rect.top;
-      handleDraw(lastX, lastY);
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      if (e.shiftKey) {
+        isRectDrawing = true;
+        rectStartX = clickX;
+        rectStartY = clickY;
+        rectEndX = clickX;
+        rectEndY = clickY;
+        rectType = (e.button === 2) ? 'erase' : 'paint';
+        SandboxGrid.setGhostRect({
+          x1: rectStartX,
+          y1: rectStartY,
+          x2: rectEndX,
+          y2: rectEndY,
+          type: rectType,
+          colorHex: window._sandboxUseRainbow ? "rainbow" : window._sandboxCurrentColor
+        });
+      } else {
+        if (e.button === 0) isPainting = true;
+        if (e.button === 2) isErasing = true;
+        lastX = clickX;
+        lastY = clickY;
+        handleDraw(lastX, lastY);
+      }
     }
   });
 
   hero.addEventListener("mousemove", (e) => {
-    if (isPainting || isErasing) {
-      const rect = hero.getBoundingClientRect();
-      const px = e.clientX - rect.left;
-      const py = e.clientY - rect.top;
-      
+    const rect = hero.getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    const py = e.clientY - rect.top;
+
+    if (isRectDrawing) {
+      rectEndX = px;
+      rectEndY = py;
+      SandboxGrid.setGhostRect({
+        x1: rectStartX,
+        y1: rectStartY,
+        x2: rectEndX,
+        y2: rectEndY,
+        type: rectType,
+        colorHex: window._sandboxUseRainbow ? "rainbow" : window._sandboxCurrentColor
+      });
+    } else if (isPainting || isErasing) {
       // Interpolate line
       const dist = Math.hypot(px - lastX, py - lastY);
       const steps = Math.max(1, Math.ceil(dist / 5)); // step every 5 pixels
@@ -111,7 +148,18 @@
   });
 
   window.addEventListener("mouseup", () => {
-    if ((isPainting || isErasing) && hasDrawn) {
+    if (isRectDrawing) {
+      isRectDrawing = false;
+      SandboxGrid.setGhostRect(null);
+      
+      if (rectType === 'paint') {
+        const drawColor = window._sandboxUseRainbow ? "rainbow" : window._sandboxCurrentColor;
+        SandboxGrid.paintRect(rectStartX, rectStartY, rectEndX, rectEndY, drawColor, 1, () => Math.random() < 0.1 ? 1 : 0);
+      } else if (rectType === 'erase') {
+        SandboxGrid.eraseRect(rectStartX, rectStartY, rectEndX, rectEndY);
+      }
+      window._sandboxPushHistory();
+    } else if ((isPainting || isErasing) && hasDrawn) {
       window._sandboxPushHistory();
     }
     isPainting = false;
