@@ -326,6 +326,10 @@ body {
   height: var(--digit-height);
   line-height: var(--digit-height);
   overflow: hidden;
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  -webkit-text-fill-color: initial;
 }
 
 .digit-strip {
@@ -338,6 +342,10 @@ body {
   text-align: center;
   padding: 0 2px;
   width: 40px;
+  background: linear-gradient(135deg, #90e0ef, #00b4d8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .thousands {
