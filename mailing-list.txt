@@ -1,5 +1,1 @@
-# Axeloft Interactive Mailing List
-# Subscriptions are appended below.
-# Users are assured they will be mailed less than 1x per year.
-jouke@tayami.net
-jj@j.om
+# created for the sake of not breaking the code
