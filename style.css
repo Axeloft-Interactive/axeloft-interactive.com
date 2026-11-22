@@ -264,10 +264,6 @@ a:any-link, a:any-link * {
   padding: 7rem 2rem;
 }
 
-.section + .section {
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
 /* ─── About Section ───────────────────────────────────────────────── */
 .about-grid {
   display: grid;
@@ -309,16 +305,13 @@ a:any-link, a:any-link * {
 }
 
 .stat-card {
-  background: rgba(255, 255, 255, 0.015);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 1rem;
   padding: 2.25rem 1.5rem;
   transition: border-color 0.3s ease, background 0.3s ease, transform 0.3s ease;
 }
 
 .stat-card:hover {
-  border-color: rgba(0, 180, 216, 0.25);
-  background: rgba(0, 180, 216, 0.03);
   transform: translateY(-2px);
 }
 
@@ -445,16 +438,13 @@ a:any-link, a:any-link * {
   gap: 20px
 }
 .creator-card {
-  background: rgba(255, 255, 255, 0.015);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 1rem;
   padding: 2.25rem 1.5rem;
   transition: border-color 0.3s ease, background 0.3s ease, transform 0.3s ease;
 }
 
 .creator-card:hover {
-  border-color: rgba(0, 180, 216, 0.25);
-  background: rgba(0, 180, 216, 0.03);
   transform: translateY(-2px);
 }
 
@@ -465,9 +455,8 @@ a:any-link, a:any-link * {
 }
 
 .creator-name {
-  padding: 15px;
-  flex-grow: true;
-  text-align: center;
+  padding: 15px 0;
+  text-align: left;
 }
 @media (min-width: 768px) {
   .creators-grid {
@@ -477,16 +466,10 @@ a:any-link, a:any-link * {
 
 /* ─── Project Showcase Section ────────────────────────────────────── */
 .project-showcase {
-  background: radial-gradient(circle at 100% 0%, rgba(0, 180, 216, 0.06), transparent 50%),
-              rgba(255, 255, 255, 0.01);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 1.5rem;
   padding: 4.5rem 4rem;
   transition: border-color 0.3s ease;
-}
-
-.project-showcase:hover {
-  border-color: rgba(0, 180, 216, 0.15);
 }
 
 .showcase-header {
@@ -623,7 +606,6 @@ a:any-link, a:any-link * {
 
 /* ─── Footer ──────────────────────────────────────────────────────── */
 .site-footer {
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
   padding: 3.5rem 2rem;
   text-align: center;
 }
@@ -662,18 +644,12 @@ a:any-link, a:any-link * {
 
 /* ─── Mailing List Section ────────────────────────────────────────── */
 .mailing-list-card {
-  background: radial-gradient(circle at 0% 100%, rgba(255, 0, 127, 0.04), transparent 50%),
-              rgba(255, 255, 255, 0.015);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 1.5rem;
   padding: 4.5rem 4rem;
   transition: border-color 0.3s ease, background 0.3s ease;
   position: relative;
   overflow: hidden;
-}
-
-.mailing-list-card:hover {
-  border-color: rgba(255, 0, 127, 0.2);
 }
 
 .mailing-list-desc {
@@ -722,14 +698,13 @@ a:any-link, a:any-link * {
 .subscribe-form .btn-primary {
   flex-shrink: 0;
   cursor: pointer;
-  background: #ff007f;
+  background: #00a6ff8d;
   color: #fff;
   min-height: 48px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 .subscribe-form .btn-primary:hover {
-  background: #ff3399;
+  background: #058593;
   box-shadow: 0 10px 30px -10px rgba(255, 0, 127, 0.4);
 }
 
