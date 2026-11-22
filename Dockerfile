@@ -16,7 +16,6 @@ COPY googlead5063528fe15ca7.html ./
 COPY incomplete_tree.png ./
 COPY super_mp.png ./
 COPY public/ ./public/
-COPY umbrashift/ ./umbrashift/
 
 # Build static files into the dist/ folder
 RUN npm run build
