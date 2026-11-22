@@ -25,6 +25,7 @@
   </head>
 
   <body>
+    <div id="pixel-grid-bg" aria-hidden="true"></div>
     <!-- ═══════════════════════════════════════════════════════════════════
          TOP BAR / NAVIGATION
          ═══════════════════════════════════════════════════════════════════ -->
@@ -51,6 +52,9 @@
             </svg>
             GitHub
           </a>
+          <button id="open-sandbox-btn" class="btn-secondary" style="display:none !important">
+            Open Sandbox
+          </button>
         </nav>
       </div>
     </header>
@@ -77,12 +81,11 @@
       <section class="section" id="about">
         <div class="about-grid">
           <div>
-            <span class="about-label">About Us</span>
             <h1 class="about-heading">
-              Two developers.<br />Endless pixels.
+              About us.
             </h1>
             <p class="about-text">
-              Axeloft Interactive is a small game studio, dedicated to creating games that will never be forgotten.
+              Axeloft Interactive is a small game studio, dedicated to the creation of games. 
             </p>
           </div>
           <div class="about-stats">
@@ -92,7 +95,7 @@
             </div>
             <div class="stat-card">
               <div class="stat-number">1</div>
-              <div class="stat-label">Core Project</div>
+              <div class="stat-label">Project</div>
             </div>
             <div class="stat-card">
               <div class="stat-number digit-roll-container">
@@ -109,7 +112,7 @@
                   <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>0</span>
                 </div>
               </div>
-              <div class="stat-label">Hours wasted</div>
+              <div class="stat-label">Hours spent</div>
             </div>
             <div class="stat-card">
               <div class="stat-number">NL</div>
@@ -203,8 +206,11 @@
       document.addEventListener("DOMContentLoaded", () => {
         // Boot the pixel grid in the hero section
         const heroMain = document.getElementById("hero");
+        const gridBg = document.getElementById("pixel-grid-bg");
+        gridBg.style.height = document.body.offsetHeight + "px";
+
         if (heroMain) {
-          SandboxGrid.init(heroMain, "Axeloft Interactive", {
+          SandboxGrid.init(gridBg, "Axeloft Interactive", {
             "STEP_LENGTH": 2,
             "CELL_SIZE": 5,
             "BORDER_WIDTH": 1,
@@ -233,17 +239,9 @@
           if (sandboxUnlocked) return;
           sandboxUnlocked = true;
           localStorage.setItem('sandbox_unlocked', 'true');
-          
-          const btn = document.createElement("button");
-          btn.id = "open-sandbox-btn";
-          btn.className = "btn-secondary";
-          btn.innerText = "Open Sandbox";
-          btn.style.position = "fixed";
-          btn.style.top = "1rem";
-          btn.style.right = "1rem";
-          btn.style.zIndex = "999";
+          const btn = document.getElementById("open-sandbox-btn");
+          btn.style.display = "block"
           btn.onclick = () => { openSandbox(); btn.style.display = "none"; };
-          document.body.appendChild(btn);
 
           if (!isLoad) {
             openSandbox();

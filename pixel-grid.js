@@ -33,7 +33,8 @@ const SandboxGrid = (() => {
     LOGO_HOVER_COLOR: "#ff007f", // Hover target color (defaults to pink to match text)
     logoColorStatic: false,   // Disable color cycling and hover target coloring
     subText: null,            // Subtitle text to render in grid
-    subTextUnderline: false   // Underline subtitle text
+    subTextUnderline: false,  // Underline subtitle text
+    shapeElement: "hero"      // Element (or id) that bounds text + logo layout (missing = whole container)
   };
 
   const ACTIVE_ELECTRONS = [];
@@ -66,6 +67,61 @@ const SandboxGrid = (() => {
   updateDerivedConfig();
 
   // ── Helpers ────────────────────────────────────────────────────────────
+  // ── Shape layout box ───────────────────────────────────────────────────
+  // Region (relative to the container) where text + logo are laid out.
+  let _shapeBox = null;
+
+  function resolveShapeElement() {
+    const el = config.shapeElement;
+    if (!el) return null;
+    if (typeof el === "string") return document.getElementById(el);
+    return el;
+  }
+
+  function computeShapeBox() {
+    const container = _shapeLayer ? _shapeLayer.container : null;
+    let box = {
+      x: 0,
+      y: 0,
+      width: container ? container.clientWidth : 0,
+      height: container ? container.clientHeight : 0,
+    };
+    const el = resolveShapeElement();
+    if (el && container && el !== container) {
+      const cr = container.getBoundingClientRect();
+      const er = el.getBoundingClientRect();
+      box = {
+        x: Math.round(er.left - cr.left),
+        y: Math.round(er.top - cr.top),
+        width: Math.round(er.width),
+        height: Math.round(er.height),
+      };
+    }
+    _shapeBox = box;
+    return box;
+  }
+
+  function getShapeBox() {
+    return _shapeBox || computeShapeBox();
+  }
+
+  function getLogoCenter() {
+    const b = getShapeBox();
+    return {
+      x: b.x + b.width / 2,
+      y: b.y + b.height * config.logoCenterYRatio,
+    };
+  }
+
+  function getLogoSize() {
+    if (!_logoOriginalW || !_logoOriginalH) return { logoW: 0, logoH: 0 };
+    const b = getShapeBox();
+    const aspect = _logoOriginalW / _logoOriginalH;
+    let logoW = b.height * config.logoScale * aspect;
+    if (logoW > b.width * 0.35) logoW = b.width * 0.35;
+    return { logoW, logoH: logoW / aspect };
+  }
+
   function randomInt(min, max) {
     return min + Math.floor(Math.random() * (max - min + 1));
   }
@@ -308,8 +364,7 @@ const SandboxGrid = (() => {
         ? this.electronCount
         : Math.min(this.electronCount, config.MAX_ELECTRONS - ACTIVE_ELECTRONS.length);
 
-      const logoCenterX = _shapeLayer ? _shapeLayer.width / 2 : 0;
-      const logoCenterY = _shapeLayer ? _shapeLayer.height * config.logoCenterYRatio : 0;
+      const { x: logoCenterX, y: logoCenterY } = getLogoCenter();
 
       for (let i = 0; i < max; i++) {
         if (eps.length === 0) break;
@@ -340,8 +395,7 @@ const SandboxGrid = (() => {
     const now = Date.now();
     let wi = 0;
 
-    const logoCenterX = _shapeLayer ? _shapeLayer.width / 2 : 0;
-    const logoCenterY = _shapeLayer ? _shapeLayer.height * config.logoCenterYRatio : 0;
+    const { x: logoCenterX, y: logoCenterY } = getLogoCenter();
 
     layer.paint((ctx) => {
       ctx.globalCompositeOperation = "lighter";
@@ -438,17 +492,8 @@ const SandboxGrid = (() => {
 
       let useNested = config.logoSrc && config.logoGridSize && config.logoGridSize > 1 && _logoOriginalW;
       
-      const logoCenterX = width / 2;
-      const logoCenterY = height * config.logoCenterYRatio;
-
-      let logoW = 0, logoH = 0;
-      if (useNested) {
-        const logoMaxH = height * config.logoScale;
-        let aspect = _logoOriginalW / _logoOriginalH;
-        logoW = logoMaxH * aspect;
-        if (logoW > width * 0.35) logoW = width * 0.35;
-        logoH = logoW / aspect;
-      }
+      const { x: logoCenterX, y: logoCenterY } = getLogoCenter();
+      const { logoW, logoH } = useNested ? getLogoSize() : { logoW: 0, logoH: 0 };
 
       // Draw large grid
       const cvsL = document.createElement("canvas");
@@ -751,14 +796,16 @@ const SandboxGrid = (() => {
       _pointerY = cy;
       _pointerActive = true;
 
+      // Ignore points outside the grid (e.g. when the grid only covers part of the page)
+      if (cx < 0 || cy < 0 || cx > rect.width || cy > rect.height) return;
+
       const i = Math.floor(cy / config.CELL_DISTANCE);
       const j = Math.floor(cx / config.CELL_DISTANCE);
       if (isMove && isSameCell(i, j)) return;
       
       let hoverColor = config.CELL_HIGHLIGHT;
       if (config.logoSrc && _shapeLayer) {
-        const logoCenterX = _shapeLayer.width / 2;
-        const logoCenterY = _shapeLayer.height * config.logoCenterYRatio;
+        const { x: logoCenterX, y: logoCenterY } = getLogoCenter();
         const dx = cx - logoCenterX;
         const dy = cy - logoCenterY;
         if (Math.sqrt(dx*dx + dy*dy) < 250) {
@@ -781,8 +828,9 @@ const SandboxGrid = (() => {
         Array.from(e.changedTouches).forEach(({ identifier }) => { delete touchRecords[identifier]; });
         _pointerActive = false;
       },
-      mouseleave() {
-        _pointerActive = false;
+      mouseout(e) {
+        // Pointer left the browser window entirely
+        if (!e.relatedTarget) _pointerActive = false;
       }
     };
 
@@ -806,9 +854,11 @@ const SandboxGrid = (() => {
       };
     });
 
+    // Listen on the window so the effect works everywhere on the page,
+    // even when the grid sits behind other content.
     const evtNames = Object.keys(handlers);
-    evtNames.forEach((n) => container.addEventListener(n, handlers[n], { passive: true }));
-    return () => evtNames.forEach((n) => container.removeEventListener(n, handlers[n]));
+    evtNames.forEach((n) => window.addEventListener(n, handlers[n], { passive: true }));
+    return () => evtNames.forEach((n) => window.removeEventListener(n, handlers[n]));
   }
 
   // ── Colour helpers for anti-aliasing ──────────────────────────────────
@@ -819,7 +869,8 @@ const SandboxGrid = (() => {
 
   // ── Shape rendering (text + optional logo) ─────────────────────────────
   function renderShapeToLayer(shapeLayer, text, logoImg) {
-    const { width, height } = shapeLayer;
+    const box = getShapeBox();
+    const { width, height } = box;
     const isMobile = width < 768;
     const hasLogo = !!logoImg;
 
@@ -827,6 +878,8 @@ const SandboxGrid = (() => {
     const textCenterY = hasLogo ? (config.subText ? height * 0.62 : height * 0.68) : height / 2;
 
     shapeLayer.repaint((ctx) => {
+      // Lay out in shape-box local coordinates
+      ctx.translate(box.x, box.y);
       ctx.fillStyle = config.FONT_COLOR || "#ff007f";
       // ── Draw text ──
       ctx.textAlign = "center";
@@ -893,15 +946,21 @@ const SandboxGrid = (() => {
     // Render everything to the shape layer
     renderShapeToLayer(shapeLayer, text, logoImg);
 
-    const pixels = shapeLayer.context.getImageData(0, 0, width, height).data;
+    const CD = config.CELL_DISTANCE;
+    const box = getShapeBox();
+
+    // Only sample the rows covered by the shape box (aligned to the grid)
+    const y0 = Math.max(0, Math.floor(box.y / CD) * CD);
+    const y1 = Math.min(height, box.y + box.height);
+    if (y1 <= y0 || width <= 0) return [];
+
+    const pixels = shapeLayer.context.getImageData(0, y0, width, y1 - y0).data;
     const cells = []; // Each entry: { row, col, alpha, cellSize, cellDistance, isLogo, color }
 
     // Sample at the normal grid
-    const CD = config.CELL_DISTANCE;
-
-    for (let y = 0; y < height; y += CD) {
+    for (let y = y0; y < y1; y += CD) {
       for (let x = 0; x < width; x += CD) {
-        const idx = (x + y * width) * 4;
+        const idx = (x + (y - y0) * width) * 4;
         const r = pixels[idx];
         const g = pixels[idx + 1];
         const b = pixels[idx + 2];
@@ -928,19 +987,12 @@ const SandboxGrid = (() => {
     const cells = getShapeMatrix(shapeLayer, text, logoImg);
     const useAA = config.logoAntiAlias;
 
-    const logoCenterX = shapeLayer.width / 2;
-    const logoCenterY = shapeLayer.height * config.logoCenterYRatio;
+    const { x: logoCenterX, y: logoCenterY } = getLogoCenter();
 
     if (logoImg && _logoOriginalW) {
       const { width, height } = shapeLayer;
-      const logoMaxH = height * config.logoScale;
-      let aspect = _logoOriginalW / _logoOriginalH;
-      let logoW = logoMaxH * aspect;
-      if (logoW > width * 0.35) {
-        logoW = width * 0.35;
-      }
-      let logoH = logoW / aspect;
-      
+      const { logoW, logoH } = getLogoSize();
+
       const maxScale = 1.35;
       const pad = config.logoGridTransition ? config.CELL_DISTANCE * 3 : 0;
       const boxW = logoW * maxScale + pad * 2;
@@ -1030,8 +1082,7 @@ const SandboxGrid = (() => {
   // ── Dynamic logo interaction update ───────────────────────────────────
   function updateLogoInteractions() {
     if (!_shapeLayer) return;
-    const logoCenterX = _shapeLayer.width / 2;
-    const logoCenterY = _shapeLayer.height * config.logoCenterYRatio;
+    const { x: logoCenterX, y: logoCenterY } = getLogoCenter();
 
     let targetScale = 1.0;
     let targetColorHex = config.LOGO_COLOR || config.FONT_COLOR;
@@ -1083,19 +1134,7 @@ const SandboxGrid = (() => {
     const b = Math.round(_currentLogoRgb.b);
 
     const useAA = config.logoAntiAlias;
-    const { width, height } = _shapeLayer;
-    
-    let logoW = 0;
-    let logoH = 0;
-    if (_logoOriginalW) {
-      const logoMaxH = height * config.logoScale;
-      let aspect = _logoOriginalW / _logoOriginalH;
-      logoW = logoMaxH * aspect;
-      if (logoW > width * 0.35) {
-        logoW = width * 0.35;
-      }
-      logoH = logoW / aspect;
-    }
+    const { logoW, logoH } = getLogoSize();
 
     PINNED_CELLS.forEach((cell) => {
       if (cell.isLogo) {
@@ -1244,7 +1283,11 @@ const SandboxGrid = (() => {
       }
     }
 
-    _bgLayer.onResize(() => drawGrid(_bgLayer));
+    // bg layer's resize handler runs first, so refresh the shape box there
+    _bgLayer.onResize(() => {
+      computeShapeBox();
+      drawGrid(_bgLayer);
+    });
     _mainLayer.onResize(() => {
       prepaint();
       if (_lastText) printShape(_shapeLayer, _lastText, _logoImg);
@@ -1258,6 +1301,7 @@ const SandboxGrid = (() => {
     prepaint();
 
     _lastText = text;
+    computeShapeBox();
     printShape(_shapeLayer, text, _logoImg);
     updateBackLinkPosition();
 
@@ -1320,6 +1364,7 @@ const SandboxGrid = (() => {
     GLOW_SPRITES.clear();
     _isAlive = false;
     _logoImg = null;
+    _shapeBox = null;
   }
 
   return { init, destroy, paintAt, eraseAt, paintRect, eraseRect, setGhostRect, exportState, importState, clearAll, printShape, getContainer, getConfig: () => config, addShape: (t, img) => { if(_shapeLayer) printShape(_shapeLayer, t, img, false); } };
